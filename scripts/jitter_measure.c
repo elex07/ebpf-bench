@@ -1,7 +1,10 @@
 /*
  * jitter_measure.c
- * High-resolution timer jitter measurement using CLOCK_MONOTONIC_RAW.
- * Compiles with: gcc -O2 -o jitter_measure jitter_measure.c
+ * High-resolution timer jitter measurement using CLOCK_MONOTONIC_RAW
+ * + clock_nanosleep for controlled sampling interval.
+ *
+ * Compile:
+ *   gcc -O2 -o jitter_measure jitter_measure.c
  */
 
 #define _GNU_SOURCE
@@ -12,11 +15,13 @@
 #include <string.h>
 #include <errno.h>
 
-#define MAX_SAMPLES 500000
-#define WARMUP 5000
+#define MAX_SAMPLES   2000000      /* enough for long runs */
+#define WARMUP        1000
+#define DEFAULT_INTERVAL_NS  100000L   /* 100 µs between samples */
 
 static inline long long diff_ns(const struct timespec *start, const struct timespec *end) {
-    return (end->tv_sec - start->tv_sec) * 1000000000LL + (end->tv_nsec - start->tv_nsec);
+    return (end->tv_sec - start->tv_sec) * 1000000000LL +
+           (end->tv_nsec - start->tv_nsec);
 }
 
 int compare_ll(const void *a, const void *b) {
@@ -27,10 +32,16 @@ int compare_ll(const void *a, const void *b) {
 
 int main(int argc, char *argv[]) {
     int duration_sec = 20;
+    long interval_ns = DEFAULT_INTERVAL_NS;
+
     if (argc > 1) {
         duration_sec = atoi(argv[1]);
-        if (duration_sec < 5) duration_sec = 5;
+        if (duration_sec < 5)  duration_sec = 5;
         if (duration_sec > 120) duration_sec = 120;
+    }
+    if (argc > 2) {
+        interval_ns = atol(argv[2]);
+        if (interval_ns < 10000) interval_ns = 10000;   /* minimum 10 µs */
     }
 
     long long *samples = malloc(sizeof(long long) * MAX_SAMPLES);
@@ -39,7 +50,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    struct timespec start_wall, now, prev;
+    struct timespec interval = {
+        .tv_sec  = interval_ns / 1000000000L,
+        .tv_nsec = interval_ns % 1000000000L
+    };
+
+    struct timespec start_wall, now, prev, wakeup;
     clock_gettime(CLOCK_MONOTONIC_RAW, &start_wall);
     clock_gettime(CLOCK_MONOTONIC_RAW, &prev);
 
@@ -47,11 +63,16 @@ int main(int argc, char *argv[]) {
     int count = 0;
 
     while (count < MAX_SAMPLES) {
+        /* Sleep for the requested interval */
+        clock_nanosleep(CLOCK_MONOTONIC_RAW, 0, &interval, NULL);
+
         clock_gettime(CLOCK_MONOTONIC_RAW, &now);
         long long elapsed = diff_ns(&start_wall, &now);
-        if (elapsed >= end_ns) break;
+        if (elapsed >= end_ns)
+            break;
 
         long long delta = diff_ns(&prev, &now);
+
         if (count >= WARMUP) {
             samples[count - WARMUP] = delta;
         }
@@ -69,14 +90,15 @@ int main(int argc, char *argv[]) {
     qsort(samples, n, sizeof(long long), compare_ll);
 
     long long sum = 0;
-    for (int i = 0; i < n; i++) sum += samples[i];
+    for (int i = 0; i < n; i++)
+        sum += samples[i];
     double mean = (double)sum / n;
 
-    /* Percentile helper */
-    #define PCT(p) samples[(int)(((p)/100.0) * (n-1))]
+    #define PCT(p) samples[(int)(((p)/100.0) * (n - 1))]
 
     printf("samples_collected: %d\n", n);
     printf("duration_sec: %d\n", duration_sec);
+    printf("interval_ns: %ld\n", interval_ns);
     printf("mean_ns: %.1f\n", mean);
     printf("min_ns: %lld\n", samples[0]);
     printf("p50_ns: %lld\n", PCT(50));
