@@ -1,0 +1,26 @@
+=== eBPF Bench – Isolation Script ===
+Timestamp: 2026-11-21T12:34:56+00:00
+
+[1] Detecting CPU frequency scaling driver...
+    Detected: intel_pstate
+[2] Setting governor to 'performance'...
+    Current governor (cpu0): performance
+[3] Disabling Turbo Boost / Core Performance Boost...
+    [OK] Intel no_turbo  (/sys/devices/system/cpu/intel_pstate/no_turbo = 1)
+[4] SMT / Hyper-Threading status:
+    Current: on
+    (To disable permanently use kernel param: nosmt)
+[5] IRQ Affinity guidance:
+    Hardware interrupts can still preempt isolated cores.
+    Recommended: identify busy IRQs with 'cat /proc/interrupts'
+    and move them away from measurement cores.
+    Strong isolation still requires boot parameters:
+      isolcpus=<cpus> nohz_full=<cpus> rcu_nocbs=<cpus> nosmt
+
+=== Current Machine State ===
+Kernel     : 6.8.0-48-generic
+Cmdline    : BOOT_IMAGE=/vmlinuz-6.8.0-48-generic root=UUID=... ro quiet
+CPU model  : Intel(R) Xeon(R) Platinum 8488C
+Governor   : performance
+
+=== Isolation script finished ===
