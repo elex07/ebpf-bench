@@ -1,0 +1,31 @@
+=== eBPF Bench – Zero-Load Baseline Jitter ===
+Timestamp : 2026-11-21T12:35:10+00:00
+Duration  : 30 seconds
+Binary    : ./scripts/jitter_measure
+
+=== Machine State ===
+Date          : 2026-11-21T12:35:10+00:00
+Hostname      : bench-node-01
+Kernel        : 6.8.0-48-generic
+CPU model     : Intel(R) Xeon(R) Platinum 8488C
+Cmdline       : BOOT_IMAGE=/vmlinuz... isolcpus=2-5 nohz_full=2-5 rcu_nocbs=2-5 nosmt
+Scaling driver: intel_pstate
+Governor      : performance
+Intel no_turbo: 1
+SMT control   : off
+
+=== Measurement (CLOCK_MONOTONIC_RAW) ===
+samples_collected: 298450
+duration_sec: 30
+interval_ns: 100000
+mean_ns: 100234.7
+min_ns: 98210
+p50_ns: 100180
+p90_ns: 101450
+p99_ns: 112300
+p99.9_ns: 148700
+p99.99_ns: 312000
+max_ns: 891200
+
+Results written to: baseline/jitter-20261121-123510.txt
+Focus on p99.9_ns and p99.99_ns. Run multiple times to check stability.

@@ -1,0 +1,74 @@
+=> Sample Output of 01-isolate.sh
+
+=== eBPF Bench – Isolation Script ===
+Timestamp: 2026-11-21T12:34:56+00:00
+
+[1] Detecting CPU frequency scaling driver...
+    Detected: intel_pstate
+[2] Setting governor to 'performance'...
+    Current governor (cpu0): performance
+[3] Disabling Turbo Boost / Core Performance Boost...
+    [OK] Intel no_turbo  (/sys/devices/system/cpu/intel_pstate/no_turbo = 1)
+[4] SMT / Hyper-Threading status:
+    Current: on
+    (To disable permanently use kernel param: nosmt)
+[5] IRQ Affinity guidance:
+    Hardware interrupts can still preempt isolated cores.
+    Recommended: identify busy IRQs with 'cat /proc/interrupts'
+    and move them away from measurement cores.
+    Strong isolation still requires boot parameters:
+      isolcpus=<cpus> nohz_full=<cpus> rcu_nocbs=<cpus> nosmt
+
+=== Current Machine State ===
+Kernel     : 6.8.0-48-generic
+Cmdline    : BOOT_IMAGE=/vmlinuz-6.8.0-48-generic root=UUID=... ro quiet
+CPU model  : Intel(R) Xeon(R) Platinum 8488C
+Governor   : performance
+
+=== Isolation script finished ===
+_________________________________________________________________________________
+
+=> Sample Output of 02-baseline-jitter.sh (with good isolation)
+
+=== eBPF Bench – Zero-Load Baseline Jitter ===
+Timestamp : 2026-11-21T12:35:10+00:00
+Duration  : 30 seconds
+Binary    : ./scripts/jitter_measure
+
+=== Machine State ===
+Date          : 2026-11-21T12:35:10+00:00
+Hostname      : bench-node-01
+Kernel        : 6.8.0-48-generic
+CPU model     : Intel(R) Xeon(R) Platinum 8488C
+Cmdline       : BOOT_IMAGE=/vmlinuz... isolcpus=2-5 nohz_full=2-5 rcu_nocbs=2-5 nosmt
+Scaling driver: intel_pstate
+Governor      : performance
+Intel no_turbo: 1
+SMT control   : off
+
+=== Measurement (CLOCK_MONOTONIC_RAW) ===
+Running jitter_measure...
+Best practice: sudo chrt -f 99 taskset -c <core> ./scripts/02-baseline-jitter.sh
+
+samples_collected: 298450
+duration_sec: 30
+interval_ns: 100000
+mean_ns: 100234.7
+min_ns: 98210
+p50_ns: 100180
+p90_ns: 101450
+p99_ns: 112300
+p99.9_ns: 148700
+p99.99_ns: 312000
+max_ns: 891200
+
+Results written to: baseline/jitter-20261121-123510.txt
+Focus on p99.9_ns and p99.99_ns. Run multiple times to check stability.
+_____________________________________________________________________________
+
+| Metric 		| Good (well isolated)| Acceptable    | Problematic 		       |
+| --- 			| ------------ 	      | ------ 	      | ----------- 	               |
+| p99.9_ns 		| < 200 µs 	      | 200–500 µs    | > 1 ms 			       |
+| p99.99_ns 		| < 500 µs 	      | 500 µs – 2 ms | Multi-millisecond spikes       |
+| Run-to-run variation 	| Small 	      | Moderate      | Large differences between runs |
+
