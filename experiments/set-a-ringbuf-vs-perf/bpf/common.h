@@ -29,6 +29,9 @@ struct event_hdr {
     __u32 seq;              /* sequence number (for ordering checks) */
 };
 
+/* Exactly 24 bytes expected */
+_Static_assert(sizeof(struct event_hdr) == 24, "event_hdr must be 24 bytes");
+
 /*
  * 64-byte event (1 cache line)
  */
@@ -37,6 +40,8 @@ struct event_64 {
     char payload[EVENT_SIZE_64 - sizeof(struct event_hdr)];
 };
 
+_Static_assert(sizeof(struct event_64) == 64, "event_64 must be exactly 64 bytes");
+
 /*
  * 512-byte event
  */
@@ -44,6 +49,8 @@ struct event_512 {
     struct event_hdr hdr;
     char payload[EVENT_SIZE_512 - sizeof(struct event_hdr)];
 };
+
+_Static_assert(sizeof(struct event_512) == 512, "event_512 must be exactly 512 bytes");
 
 /*
  * Kernel-side statistics
