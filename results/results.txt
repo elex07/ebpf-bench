@@ -66,9 +66,9 @@ Results written to: baseline/jitter-20261121-123510.txt
 Focus on p99.9_ns and p99.99_ns. Run multiple times to check stability.
 _____________________________________________________________________________
 
-| Metric 		| Good (well isolated)| Acceptable    | Problematic 		       |
-| --- 			| ------------ 	      | ------ 	      | ----------- 	               |
-| p99.9_ns 		| < 200 µs 	      | 200–500 µs    | > 1 ms 			       |
-| p99.99_ns 		| < 500 µs 	      | 500 µs – 2 ms | Multi-millisecond spikes       |
-| Run-to-run variation 	| Small 	      | Moderate      | Large differences between runs |
+| Metric                | Good (well isolated)| Acceptable    | Problematic                    |
+| ----------------------| --------------------| --------------| -------------------------------|
+| p99.9_ns              | < 200 µs            | 200–500 µs    | > 1 ms                         |
+| p99.99_ns             | < 500 µs            | 500 µs – 2 ms | Multi-millisecond spikes       |
+| Run-to-run variation  | Small               | Moderate      | Large differences between runs |
 

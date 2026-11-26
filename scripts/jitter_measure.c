@@ -1,6 +1,6 @@
 /*
  * jitter_measure.c
- * High-resolution timer jitter measurement using CLOCK_MONOTONIC_RAW
+ * High-resolution timer jitter measurement using CLOCK_MONOTONIC_RAW.
  * + clock_nanosleep for controlled sampling interval.
  *
  * Compile:
@@ -94,6 +94,7 @@ int main(int argc, char *argv[]) {
         sum += samples[i];
     double mean = (double)sum / n;
 
+    /* Percentile helper */
     #define PCT(p) samples[(int)(((p)/100.0) * (n - 1))]
 
     printf("samples_collected: %d\n", n);
