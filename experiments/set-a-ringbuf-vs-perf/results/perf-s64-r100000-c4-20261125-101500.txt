@@ -1,0 +1,44 @@
+Perf consumer: 8 CPUs, page_size=4096, per_cpu_pages=128 (total ~4194304 bytes)
+Perf consumer started (size=64, duration=13s)
+
+=== syscall_burst (fixed) ===
+cores          : 4
+start_cpu      : 2
+total_rate     : 100000 events/sec
+per-thread rate: 25000 events/sec
+duration       : 10.0 sec
+record_latency : yes (thread 0 only)
+
+thread 0 (CPU 2): 249871 events
+thread 1 (CPU 3): 250012 events
+thread 2 (CPU 4): 249934 events
+thread 3 (CPU 5): 249983 events
+
+Total events : 999800
+Actual rate  : 99980.0 events/sec
+
+=== Producer-side syscall latency (getpid) ===
+getpid samples: 244871
+  mean_ns  : 412.6
+  min_ns   : 228
+  p50_ns   : 365
+  p90_ns   : 520
+  p99_ns   : 1180
+  p99.9_ns : 2450
+  p99.99_ns: 6800
+  max_ns   : 22100
+
+Lost 1842 events on CPU 3
+Lost 0 events on CPU 2
+
+=== Perf Consumer Results ===
+events_received     : 3978912
+lost_events         : 1842
+events_submitted    : 3999999
+events_dropped      : 19246
+output_failures     : 19246
+total_dropped       : 21088
+out_of_order_events : 1842
+consumer_user_sec   : 1.4120
+consumer_sys_sec    : 0.5140
+consumer_total_sec  : 1.9260

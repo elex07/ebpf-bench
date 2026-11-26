@@ -56,9 +56,20 @@ experiments/set-a-ringbuf-vs-perf/
 - Consumer user + system CPU time
 - Event reordering rate (Perf only)
 
-## Current Status
+## Recommended Smoke-Test Sequence
 
-- Workload generator: completed
-- Common definitions: completed
-- BPF producers & consumers: in progress
-- Comparison runner: pending
+```bash
+cd ebpf-bench/experiments/set-a-ringbuf-vs-perf
+
+# Generate vmlinux.h (required for CO-RE)
+bpftool btf dump file /sys/kernel/btf/vmlinux format c > bpf/vmlinux.h
+
+# Build
+make all
+
+# Run full comparison (must be root)
+sudo ./scripts/run_comparison.sh
+
+```
+
+
