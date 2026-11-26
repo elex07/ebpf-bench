@@ -14,17 +14,26 @@
 #include "../bpf/common.h"
 #include "../bpf/perf_producer.skel.h"
 
-#define TOTAL_BUFFER_BYTES (4 * 1024 * 1024)  /* 4 MiB – must match ringbuf */
+#define TOTAL_BUFFER_BYTES (4 * 1024 * 1024)  /* 4 MiB – target match with ringbuf */
 
 static volatile sig_atomic_t stop;
 static __u64 events_received;
 static __u64 lost_events;
+static __u64 out_of_order;
+static __u64 last_ts;
 
 static void sig_handler(int sig) { stop = 1; }
 
 static void handle_event(void *ctx, int cpu, void *data, __u32 data_sz)
 {
-	(void)ctx; (void)cpu; (void)data; (void)data_sz;
+	const struct event_hdr *hdr = data;
+	(void)ctx; (void)cpu;
+
+	if (data_sz >= sizeof(*hdr)) {
+		if (hdr->timestamp_ns < last_ts)
+			out_of_order++;
+		last_ts = hdr->timestamp_ns;
+	}
 	events_received++;
 }
 
@@ -32,7 +41,8 @@ static void handle_lost(void *ctx, int cpu, __u64 cnt)
 {
 	(void)ctx;
 	lost_events += cnt;
-	fprintf(stderr, "Lost %llu events on CPU %d\n", (unsigned long long)cnt, cpu);
+	fprintf(stderr, "Lost %llu events on CPU %d\n",
+		(unsigned long long)cnt, cpu);
 }
 
 static void print_usage(const char *prog)
@@ -49,7 +59,7 @@ int main(int argc, char **argv)
 	struct perf_producer_bpf *skel = NULL;
 	struct perf_buffer *pb = NULL;
 	struct rusage usage_start, usage_end;
-	int err = 0, i, ncpus, page_size, per_cpu_pages;
+	int err = 0, i, ncpus, page_size, per_cpu_pages, raw_pages;
 	__u32 size = EVENT_SIZE_64;
 	int duration = 15;
 	__u32 key = 0;
@@ -76,12 +86,18 @@ int main(int argc, char **argv)
 	ncpus = libbpf_num_possible_cpus();
 	page_size = sysconf(_SC_PAGESIZE);
 	if (page_size <= 0) page_size = 4096;
-	per_cpu_pages = TOTAL_BUFFER_BYTES / (ncpus * page_size);
-	if (per_cpu_pages < 8) per_cpu_pages = 8;
 
-	printf("Perf consumer: %d CPUs, page_size=%d, per_cpu_pages=%d (total ~%d MiB)\n",
+	/* Round down to power-of-two (required by perf_event_open) */
+	raw_pages = TOTAL_BUFFER_BYTES / (ncpus * page_size);
+	per_cpu_pages = 1;
+	while ((per_cpu_pages << 1) <= raw_pages)
+		per_cpu_pages <<= 1;
+	if (per_cpu_pages < 8)
+		per_cpu_pages = 8;
+
+	printf("Perf consumer: %d CPUs, page_size=%d, per_cpu_pages=%d (total ~%d bytes)\n",
 	       ncpus, page_size, per_cpu_pages,
-	       (per_cpu_pages * ncpus * page_size) / (1024 * 1024));
+	       per_cpu_pages * ncpus * page_size);
 
 	skel = perf_producer_bpf__open();
 	if (!skel) {
@@ -124,12 +140,17 @@ int main(int argc, char **argv)
 	time_t end = time(NULL) + duration;
 	while (!stop && time(NULL) < end) {
 		err = perf_buffer__poll(pb, 100);
-		if (err == -EINTR) break;
+		if (err == -EINTR)
+			break;
 		if (err < 0) {
 			fprintf(stderr, "perf_buffer__poll error: %d\n", err);
 			break;
 		}
 	}
+
+	/* Final non-blocking drain */
+	while (perf_buffer__poll(pb, 0) > 0)
+		;
 
 	getrusage(RUSAGE_SELF, &usage_end);
 
@@ -149,6 +170,8 @@ int main(int argc, char **argv)
 		free(values);
 	}
 
+	__u64 total_dropped = total.events_dropped + lost_events;
+
 	double user_sec = (usage_end.ru_utime.tv_sec - usage_start.ru_utime.tv_sec) +
 			  (usage_end.ru_utime.tv_usec - usage_start.ru_utime.tv_usec) / 1e6;
 	double sys_sec  = (usage_end.ru_stime.tv_sec - usage_start.ru_stime.tv_sec) +
@@ -160,6 +183,8 @@ int main(int argc, char **argv)
 	printf("events_submitted    : %llu\n", (unsigned long long)total.events_submitted);
 	printf("events_dropped      : %llu\n", (unsigned long long)total.events_dropped);
 	printf("output_failures     : %llu\n", (unsigned long long)total.output_failures);
+	printf("total_dropped       : %llu\n", (unsigned long long)total_dropped);
+	printf("out_of_order_events : %llu\n", (unsigned long long)out_of_order);
 	printf("consumer_user_sec   : %.4f\n", user_sec);
 	printf("consumer_sys_sec    : %.4f\n", sys_sec);
 	printf("consumer_total_sec  : %.4f\n", user_sec + sys_sec);

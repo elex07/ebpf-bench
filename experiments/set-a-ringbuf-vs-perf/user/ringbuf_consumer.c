@@ -16,12 +16,21 @@
 
 static volatile sig_atomic_t stop;
 static __u64 events_received;
+static __u64 out_of_order;
+static __u64 last_ts;
 
 static void sig_handler(int sig) { stop = 1; }
 
 static int handle_event(void *ctx, void *data, size_t data_sz)
 {
-	(void)ctx; (void)data; (void)data_sz;
+	const struct event_hdr *hdr = data;
+	(void)ctx;
+
+	if (data_sz >= sizeof(*hdr)) {
+		if (hdr->timestamp_ns < last_ts)
+			out_of_order++;
+		last_ts = hdr->timestamp_ns;
+	}
 	events_received++;
 	return 0;
 }
@@ -104,12 +113,17 @@ int main(int argc, char **argv)
 	time_t end = time(NULL) + duration;
 	while (!stop && time(NULL) < end) {
 		err = ring_buffer__poll(rb, 100);
-		if (err == -EINTR) break;
+		if (err == -EINTR)
+			break;
 		if (err < 0) {
 			fprintf(stderr, "ring_buffer__poll error: %d\n", err);
 			break;
 		}
 	}
+
+	/* Final non-blocking drain */
+	while (ring_buffer__poll(rb, 0) > 0)
+		;
 
 	getrusage(RUSAGE_SELF, &usage_end);
 
@@ -140,6 +154,8 @@ int main(int argc, char **argv)
 	printf("events_submitted    : %llu\n", (unsigned long long)total.events_submitted);
 	printf("events_dropped      : %llu\n", (unsigned long long)total.events_dropped);
 	printf("reserve_failures    : %llu\n", (unsigned long long)total.reserve_failures);
+	printf("total_dropped       : %llu\n", (unsigned long long)total.events_dropped);
+	printf("out_of_order_events : %llu\n", (unsigned long long)out_of_order);
 	printf("consumer_user_sec   : %.4f\n", user_sec);
 	printf("consumer_sys_sec    : %.4f\n", sys_sec);
 	printf("consumer_total_sec  : %.4f\n", user_sec + sys_sec);
