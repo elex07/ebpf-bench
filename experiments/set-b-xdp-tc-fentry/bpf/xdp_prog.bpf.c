@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
+/* xdp_prog.bpf.c – Ingress (RX) XDP program */
 /* xdp_prog.bpf.c
  * XDP program for Experiment Set B
  * Attaches at the earliest point in the network stack (driver level).
@@ -19,6 +20,13 @@ struct {
 	__type(value, struct bpf_stats);
 } stats_map SEC(".maps");
 
+struct {
+	__uint(type, BPF_MAP_TYPE_ARRAY);
+	__uint(max_entries, 1);
+	__type(key, __u32);
+	__type(value, __u32);
+} config_ifindex SEC(".maps");
+
 static __always_inline void update_stats(__u32 len, int drop)
 {
 	__u32 key = STATS_MAP_KEY;
@@ -38,6 +46,11 @@ int xdp_pass(struct xdp_md *ctx)
 	void *data     = (void *)(long)ctx->data;
 	void *data_end = (void *)(long)ctx->data_end;
 	__u32 len = (__u32)(data_end - data);
+	__u32 key = 0;
+	__u32 *target_if = bpf_map_lookup_elem(&config_ifindex, &key);
+
+	if (target_if && *target_if != 0 && ctx->ingress_ifindex != *target_if)
+		return XDP_PASS;
 
 	/* Basic bounds check */
 	if (data + 14 > data_end) {		/* minimum Ethernet header */

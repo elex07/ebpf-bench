@@ -4,12 +4,17 @@
 
 /*
  * Shared definitions for Experiment Set B
- * XDP vs TC vs fentry/kprobe comparison
+ * XDP vs TC vs fentry/kprobe – all on the ingress (RX) path
  */
 
 #define MAX_CPUS 64
 
+/* TC action codes (avoid including linux/pkt_cls.h with vmlinux.h) */
+#define TC_ACT_OK   0
+#define TC_ACT_SHOT 2
+
 /* Simple event recorded on every packet / hook invocation */
+/* Simple per-packet / per-invocation record */
 struct event_hdr {
 	__u64 timestamp_ns;   /* bpf_ktime_get_ns() */
 	__u32 cpu;
