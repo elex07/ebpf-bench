@@ -42,10 +42,11 @@ run_one() {
 	local size="$3"
 	local pps="$4"
 	local outfile="${RESULTS_DIR}/${mech}-s${size}-p${pps}-${TIMESTAMP}.txt"
+	local perf_out="${RESULTS_DIR}/${mech}-s${size}-p${pps}-perf-${TIMESTAMP}.txt"
 
 	echo "--- ${mech} size=${size} pps=${pps} ---"
 
-	"${loader}" -i "${VETH_RX}" -d $((DURATION + 3)) > "${outfile}" 2>&1 &
+	"${loader}" -i "${VETH_RX}" -d $((DURATION + 5)) > "${outfile}" 2>&1 &
 	local loader_pid=$!
 	sleep 0.5
 
@@ -55,8 +56,16 @@ run_one() {
 		return
 	fi
 
-	PKT_SIZE=${size} PPS=${pps} DURATION=${DURATION} \
-		"${EXP_DIR}/workload/pktgen.sh" >> "${outfile}" 2>&1 || true
+	if command -v perf >/dev/null 2>&1; then
+		PKT_SIZE=${size} PPS=${pps} DURATION=${DURATION} \
+		perf stat -C 2 \
+			-e cycles,instructions,cache-misses,L1-dcache-load-misses,LLC-load-misses \
+			-o "${perf_out}" \
+			"${EXP_DIR}/workload/pktgen.sh" >> "${outfile}" 2>&1 || true
+	else
+		PKT_SIZE=${size} PPS=${pps} DURATION=${DURATION} \
+			"${EXP_DIR}/workload/pktgen.sh" >> "${outfile}" 2>&1 || true
+	fi
 
 	kill -INT ${loader_pid} 2>/dev/null || true
 	wait ${loader_pid} 2>/dev/null || true
