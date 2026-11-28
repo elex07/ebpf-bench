@@ -1,0 +1,14 @@
+fentry attached (filter ifindex 42), duration=15s
+
+=== pktgen: count=1000000 size=64 pps=100000 delay_ns=10000 iface=veth_tx ===
+pktgen finished
+Result: OK: 10002345 usec, 1000000 (64byte)
+  99976pps 51Mb/sec errors: 0
+
+=== fentry Results ===
+packets_seen       : 999105
+packets_dropped    : 0
+bytes_seen         : 63942720
+bpf_run_cnt        : 999105
+bpf_run_time_ns    : 145210000
+bpf_ns_per_packet  : 145.34
