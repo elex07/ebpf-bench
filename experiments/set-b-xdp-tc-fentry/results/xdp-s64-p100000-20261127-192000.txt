@@ -1,0 +1,16 @@
+XDP attached on veth_rx (ifindex 42), duration=15s
+
+=== pktgen: count=1000000 size=64 pps=100000 delay_ns=10000 iface=veth_tx ===
+pktgen finished
+Params: count 1000000  min_pkt_size: 64  max_pkt_size: 64
+     frags: 0  delay: 10000 ns  clone_skb: 1000  ifname: veth_tx
+Result: OK: 10000123 usec, 1000000 (64byte,0frags)
+  99998pps 51Mb/sec errors: 0
+
+=== XDP Results ===
+packets_seen       : 999847
+packets_dropped    : 0
+bytes_seen         : 63990208
+bpf_run_cnt        : 999847
+bpf_run_time_ns    : 38194000
+bpf_ns_per_packet  : 38.20

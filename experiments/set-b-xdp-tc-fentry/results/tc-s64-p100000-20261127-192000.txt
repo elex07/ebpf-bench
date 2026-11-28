@@ -1,0 +1,14 @@
+TC attached on veth_rx (ifindex 42), duration=15s
+
+=== pktgen: count=1000000 size=64 pps=100000 delay_ns=10000 iface=veth_tx ===
+pktgen finished
+Result: OK: 10001234 usec, 1000000 (64byte)
+  99987pps 51Mb/sec errors: 0
+
+=== TC Results ===
+packets_seen       : 999412
+packets_dropped    : 0
+bytes_seen         : 63962368
+bpf_run_cnt        : 999412
+bpf_run_time_ns    : 89587000
+bpf_ns_per_packet  : 89.64

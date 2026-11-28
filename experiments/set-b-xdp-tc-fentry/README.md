@@ -39,4 +39,22 @@ set-b-xdp-tc-fentry/
 
 ```
 
+### Pre-run checklist
+
+```script
+cd ebpf-bench/experiments/set-b-xdp-tc-fentry
+
+# 1. Generate vmlinux.h (required for CO-RE)
+bpftool btf dump file /sys/kernel/btf/vmlinux format c > bpf/vmlinux.h
+
+# 2. Make scripts executable
+chmod +x workload/setup_veth.sh workload/pktgen.sh scripts/run_comparison.sh
+
+# 3. Build
+make all
+
+# 4. Run full comparison (as root)
+sudo ./scripts/run_comparison.sh
+```
+
 
