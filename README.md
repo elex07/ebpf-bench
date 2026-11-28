@@ -28,7 +28,13 @@ ebpf-bench/                          # Top-level repository root
 ├── README.md
 ├── LICENSE
 ├── docs/
-│   └── noise-control.md
+│   ├── development.md
+│   ├── experiment-set-a.md
+│   ├── experiment-set-b.md
+│   ├── noise-control.md
+│   ├── overview.md
+│   ├── paper-outline-imrad.md
+│   └── results-interpretation.md
 ├── scripts/                         # Global helper scripts (isolation, baseline)
 │   ├── 01-isolate.sh
 │   ├── 02-baseline-jitter.sh
@@ -36,21 +42,39 @@ ebpf-bench/                          # Top-level repository root
 │   └── jitter_measure
 ├── baseline/                        # Results from zero-load baseline runs
 ├── experiments/
-│   └── set-a-ringbuf-vs-perf/       # Experiment Set A (current focus)
+│   ├── set-a-ringbuf-vs-perf       # Experiment Set A (current focus)
+│   │   ├── README.md
+│   │   ├── Makefile
+│   │   ├── bpf/
+│   │   │   ├── common.h
+│   │   │   ├── ringbuf_producer.bpf.c
+│   │   │   └── perf_producer.bpf.c
+│   │   ├── user/
+│   │   │   ├── ringbuf_consumer.c
+│   │   │   └── perf_consumer.c
+│   │   ├── workload/
+│   │   │   └── syscall_burst.c
+│   │   ├── scripts/
+│   │   │   └── run_comparison.sh
+│   │   └── results/
+│   └── set-b-xdp-tc-fentry
 │       ├── README.md
 │       ├── Makefile
-│       ├── bpf/
-│       │   ├── common.h
-│       │   ├── ringbuf_producer.bpf.c
-│       │   └── perf_producer.bpf.c
-│       ├── user/
-│       │   ├── ringbuf_consumer.c
-│       │   └── perf_consumer.c
-│       ├── workload/
-│       │   └── syscall_burst.c
-│       ├── scripts/
+│       ├── bpf
+│       │   ├── common.h
+│       │   ├── fentry_prog.bpf.c
+│       │   ├── tc_prog.bpf.c
+│       │   └── xdp_prog.bpf.c       │   
+│       ├── user
+│       │   ├── fentry_loader.c
+│       │   ├── tc_loader.c
+│       │   └── xdp_loader.c
+│       ├── workload
+│       │   ├── pktgen.sh
+│       │   └── setup_veth.sh
+│       ├── scripts
 │       │   └── run_comparison.sh
-│       └── results/
+│       └── results/  
 └── results/                         # Optional top-level aggregated results
 
 ```
@@ -76,3 +100,8 @@ sudo ./scripts/01-isolate.sh
 
 #### 3. Run zero-load baseline (recommended way)
 sudo chrt -f 99 taskset -c 2 ./scripts/02-baseline-jitter.sh 30
+
+---
+
+> Pavitra Kanetkar
+
